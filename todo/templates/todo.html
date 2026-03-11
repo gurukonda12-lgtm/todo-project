@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+    <h1 class="hello">Hello {{request.user.username}}</h1>
+
+    <div class="signup-login">
+
+        <div class="signup-box scr">
+
+            <div class="heading">
+                Get Things Done?
+            </div>
+
+            <div class="anca">
+                <a href="{% url 'signout' %}">
+                    Logout
+                </a>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <input type="text" class="inp" name="title" required placeholder="Add Today's Task">
+
+                <input type="submit" class="submit-button" value="Add Task">
+
+            </form>
+
+
+            {% for todo in res %}
+
+            <div class="Todo">
+
+                <h5>{{todo.srno}}</h5>
+
+                <p>{{todo.title}}</p>
+
+                <div>
+
+                    <a href="/edit_todo/{{todo.srno}}">
+                        Edit
+                    </a>
+
+                    <a href="/delete_todo/{{todo.srno}}">
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

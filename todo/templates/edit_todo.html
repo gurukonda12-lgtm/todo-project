@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+    <div class="signup-login">
+
+        <div class="signup-box">
+
+            <div class="heading">
+                Edit Task
+            </div>
+
+            <form method="post">
+
+                {% csrf_token %}
+
+                <input type="text" class="inp" name="title" value="{{obj.title}}" required>
+
+                <input type="submit" class="submit-button" value="Update Task">
+
+            </form>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

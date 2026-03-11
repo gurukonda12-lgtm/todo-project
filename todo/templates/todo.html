@@ -1,68 +1,69 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo - {{ request.user.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
+<body class="bg-dark text-white">
+<div class="container mt-5">
 
-<body>
-
-    <h1 class="hello">Hello {{request.user.username}}</h1>
-
-    <div class="signup-login">
-
-        <div class="signup-box scr">
-
-            <div class="heading">
-                Get Things Done?
-            </div>
-
-            <div class="anca">
-                <a href="{% url 'signout' %}">
-                    Logout
-                </a>
-            </div>
-
-            <form method="post">
-                {% csrf_token %}
-
-                <input type="text" class="inp" name="title" required placeholder="Add Today's Task">
-
-                <input type="submit" class="submit-button" value="Add Task">
-
-            </form>
-
-
-            {% for todo in res %}
-
-            <div class="Todo">
-
-                <h5>{{todo.srno}}</h5>
-
-                <p>{{todo.title}}</p>
-
-                <div>
-
-                    <a href="/edit_todo/{{todo.srno}}">
-                        Edit
-                    </a>
-
-                    <a href="/delete_todo/{{todo.srno}}">
-                        Delete
-                    </a>
-
-                </div>
-
-            </div>
-
-            {% endfor %}
-
-        </div>
-
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Hello, {{ request.user.username }}</h2>
+        <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
     </div>
 
-</body>
+    <!-- Add Todo Form -->
+    <form method="post" class="mb-4 p-3 bg-secondary rounded">
+        {% csrf_token %}
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" name="title" class="form-control" placeholder="Add Task" required>
+            </div>
+            <div class="col-md-3">
+                <select name="priority" class="form-select">
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="due_date" class="form-control">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-warning w-100">Add</button>
+            </div>
+        </div>
+    </form>
 
+    <!-- Todo List -->
+    <ul class="list-group">
+        {% for todo in todos %}
+        <li class="list-group-item d-flex justify-content-between align-items-center
+                   {% if todo.completed %}list-group-item-success{% else %}
+                       {% if todo.priority == 'High' %}bg-danger text-white{% elif todo.priority == 'Medium' %}bg-warning text-dark{% else %}bg-success text-white{% endif %}
+                   {% endif %}">
+            <div>
+                <strong>{{ todo.title }}</strong> |
+                {{ todo.priority }} |
+                {% if todo.due_date %}Due: {{ todo.due_date }}{% endif %}
+            </div>
+            <div>
+                <a href="{% url 'toggle_complete' todo.id %}" class="btn btn-sm btn-success me-1">
+                    {% if todo.completed %}Undo{% else %}Done{% endif %}
+                </a>
+                <a href="{% url 'edit_todo' todo.id %}" class="btn btn-sm btn-primary me-1">Edit</a>
+                <a href="{% url 'delete_todo' todo.id %}" class="btn btn-sm btn-danger">Delete</a>
+            </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item bg-secondary text-white">No tasks yet!</li>
+        {% endfor %}
+    </ul>
+
+</div>
+</body>
 </html>

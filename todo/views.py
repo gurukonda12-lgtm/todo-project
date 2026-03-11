@@ -1,79 +1,104 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from .models import TODOO
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from .models import Todo
+from .serializers import TodoSerializer
 
-def signup(request):
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from .models import Todo
+from .serializers import TodoSerializer
+
+
+class TodoViewSet(viewsets.ModelViewSet):
+    serializer_class = TodoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Todo.objects.filter(user=user)
+        return Todo.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+# ===================== User Views =====================
+def signup_view(request):
     if request.method == 'POST':
-        fnm = request.POST.get('fnm')
-        emailid = request.POST.get('email')
-        pwd = request.POST.get('pwd')
-
-        my_user = User.objects.create_user(fnm, emailid, pwd)
-        my_user.save()
-
-        return redirect('/loginn')
-
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        if not User.objects.filter(username=username).exists():
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.save()
+        return redirect('login')
     return render(request, 'signup.html')
 
 
-def loginn(request):
+def login_view(request):
     if request.method == 'POST':
-        fnm = request.POST.get('fnm')
-        pwd = request.POST.get('pwd')
-
-        user = authenticate(request, username=fnm, password=pwd)
-
-        if user is not None:
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user:
             login(request, user)
-            return redirect('/todopage')
-        else:
-            return redirect('/loginn')
-
+            return redirect('home')
     return render(request, 'login.html')
 
 
-@login_required(login_url='/loginn')
-def todo(request):
-
-    if request.method == "POST":
-        title = request.POST.get('title')
-
-        obj = TODOO(title=title, user=request.user)
-        obj.save()
-
-        return redirect('/todopage')
-
-    res = TODOO.objects.filter(user=request.user).order_by('-date')
-
-    return render(request, 'todo.html', {'res': res})
-
-
-@login_required(login_url='/loginn')
-def edit_todo(request, srno):
-
-    obj = TODOO.objects.get(srno=srno)
-
-    if request.method == "POST":
-        title = request.POST.get('title')
-        obj.title = title
-        obj.save()
-
-        return redirect('/todopage')
-
-    return render(request, 'edit_todo.html', {'obj': obj})
-
-
-@login_required(login_url='/loginn')
-def delete_todo(request, srno):
-    obj = TODOO.objects.get(srno=srno)
-    obj.delete()
-
-    return redirect('/todopage')
-
-
-def signout(request):
+def logout_view(request):
     logout(request)
-    return redirect('/loginn')
+    return redirect('login')
+
+# ===================== Todo Views =====================
+@login_required(login_url='login')
+def home(request):
+    todos = Todo.objects.filter(user=request.user).order_by('-date_created')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        priority = request.POST.get('priority')
+        due_date = request.POST.get('due_date')
+        Todo.objects.create(user=request.user, title=title, priority=priority, due_date=due_date)
+        return redirect('home')
+
+    return render(request, 'todo.html', {'todos': todos})
+
+@login_required(login_url='login')
+def delete_todo(request, todo_id):
+    todo = Todo.objects.get(id=todo_id, user=request.user)
+    todo.delete()
+    return redirect('home')
+
+@login_required(login_url='login')
+def toggle_complete(request, todo_id):
+    todo = Todo.objects.get(id=todo_id, user=request.user)
+    todo.completed = not todo.completed
+    todo.save()
+    return redirect('home')
+
+
+@login_required(login_url='login')
+def edit_todo(request, todo_id):
+    todo = Todo.objects.get(id=todo_id, user=request.user)
+
+    if request.method == 'POST':
+        todo.title = request.POST.get('title')
+        todo.priority = request.POST.get('priority')
+        todo.due_date = request.POST.get('due_date')
+        todo.save()
+        return redirect('home')
+
+    return render(request, 'edit_todo.html', {'todo': todo})
+
+# ===================== REST API =====================
+class TodoViewSet(viewsets.ModelViewSet):
+    serializer_class = TodoSerializer
+
+    def get_queryset(self):
+        return Todo.objects.filter(user=self.request.user)
